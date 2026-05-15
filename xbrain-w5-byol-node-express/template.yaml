@@ -1,0 +1,50 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: BYOL challenge — Node.js Express on Lambda (your job to fill in the gaps)
+
+Globals:
+  Function:
+    Timeout: 10
+    MemorySize: 512
+    Runtime: nodejs22.x
+    Architectures:
+      - arm64
+
+Resources:
+  ExpressFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: byol-node-express
+      CodeUri: ./
+      Handler: lambda.handler
+      Tracing: Active
+      Events:
+        ApiCatchAll:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ExpressHttpApi
+            Path: /{proxy+}
+            Method: ANY
+            PayloadFormatVersion: '2.0'
+        ApiRoot:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ExpressHttpApi
+            Path: /
+            Method: ANY
+            PayloadFormatVersion: '2.0'
+
+  ExpressHttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: $default
+
+  ExpressLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${ExpressFunction}
+      RetentionInDays: 7
+
+Outputs:
+  ApiUrl:
+    Value: !Sub https://${ExpressHttpApi}.execute-api.${AWS::Region}.amazonaws.com
